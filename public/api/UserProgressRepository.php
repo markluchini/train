@@ -1,10 +1,10 @@
 <?php
 
 class UserProgressRepository {
-    private string $filePath;
+    private PDO $db;
 
-    public function __construct(string $filePath) {
-        $this->filePath = $filePath;
+    public function __construct(PDO $db) {
+        $this->db = $db;
     }
 
     /**
@@ -14,15 +14,10 @@ class UserProgressRepository {
      * @return int
      */
     public function getProgress(string $userId): int {
-        if (!file_exists($this->filePath)) {
-            return 0;
-        }
-        $data = file_get_contents($this->filePath);
-        $progressMap = json_decode($data, true);
-        if (!is_array($progressMap) || !isset($progressMap[$userId])) {
-            return 0;
-        }
-        return (int)$progressMap[$userId];
+        $stmt = $this->db->prepare("SELECT progress_index FROM user_progress WHERE user_id = ?");
+        $stmt->execute([$userId]);
+        $val = $stmt->fetchColumn();
+        return $val !== false ? (int)$val : 0;
     }
 
     /**
@@ -32,15 +27,9 @@ class UserProgressRepository {
      * @return bool
      */
     public function saveProgress(string $userId, int $questionIndex): bool {
-        $progressMap = [];
-        if (file_exists($this->filePath)) {
-            $data = file_get_contents($this->filePath);
-            $progressMap = json_decode($data, true);
-            if (!is_array($progressMap)) {
-                $progressMap = [];
-            }
-        }
-        $progressMap[$userId] = $questionIndex;
-        return file_put_contents($this->filePath, json_encode($progressMap, JSON_PRETTY_PRINT)) !== false;
+        $stmt = $this->db->prepare("INSERT INTO user_progress (user_id, progress_index) 
+                                    VALUES (?, ?) 
+                                    ON DUPLICATE KEY UPDATE progress_index = VALUES(progress_index)");
+        return $stmt->execute([$userId, $questionIndex]);
     }
 }

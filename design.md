@@ -13,11 +13,11 @@ The system consists of two primary applications: the **Player App** (client-faci
 *   **Frontend:** React (SPA) with Tailwind CSS for responsive styling.
 *   **State Management:** Client-side state managed via a sliding-window buffer (history, current, pre-fetch).
 *   **API Layer:** RESTful JSON services.
-*   **Data Storage:** Initially a local JSON file store, abstracted via a repository pattern to ensure seamless migration to SQL/NoSQL databases.
+*   **Data Storage:** MySQL relational database.
 *   **Language:** PHP
-*   **Application FQDN:** [https://drluchini.com/training/](https://drluchini.com/training/)
-*   **Admin FQDN:** [https://drluchini.com/training/admin](https://drluchini.com/training/admin)
-*   **Default Question Data File:** [data_questions.json](file:///Users/mark/github/drluchini/training/data_questions.json)
+*   **Application FQDN:** [https://train.drluchini.com/](https://train.drluchini.com/)
+*   **Admin FQDN:** [https://train.drluchini.com/admin](https://train.drluchini.com/admin)
+*   **Database Config Location:** `/var/www/.train.drluchini.com.php`
 
 ## Data Structure Specifications
 
@@ -59,39 +59,39 @@ All sequential implementation prompts have been successfully executed and valida
 
 ### 1. Project Initialization
 - **Files Created/Modified:**
-  - [index.html](file:///Users/mark/github/drluchini/training/index.html): Standardized viewport tags to restrict mobile zoom/scaling and load premium fonts.
-  - [package.json](file:///Users/mark/github/drluchini/training/package.json): Named package `micro-training-trivia` and configured Vite + Tailwind CSS v4 dependencies.
-  - [vite.config.ts](file:///Users/mark/github/drluchini/training/vite.config.ts): Integrated the rust-powered `@tailwindcss/vite` plugin.
-  - [src/index.css](file:///Users/mark/github/drluchini/training/src/index.css): Loaded Tailwind directives and custom 3D card rotation utility classes.
+  - [index.html](file:///Users/mark/github/train/index.html): Standardized viewport tags to restrict mobile zoom/scaling and load premium fonts.
+  - [package.json](file:///Users/mark/github/train/package.json): Named package `micro-training-trivia` and configured Vite + Tailwind CSS v4 dependencies.
+  - [vite.config.ts](file:///Users/mark/github/train/vite.config.ts): Integrated the rust-powered `@tailwindcss/vite` plugin.
+  - [src/index.css](file:///Users/mark/github/train/src/index.css): Loaded Tailwind directives and custom 3D card rotation utility classes.
 - **Status:** **Verified**. Dev environment builds successfully with zero compilation or syntax errors.
 
 ### 2. Data Model & Service Layer
 - **Files Created/Modified:**
-  - [src/types.ts](file:///Users/mark/github/drluchini/training/src/types.ts): Configured type safety interfaces for questions, selections, and sliding-window formats.
-  - [data_questions.json](file:///Users/mark/github/drluchini/training/data_questions.json): Populated a mock database of 7 detailed technical questions with multiple difficulties and detailed explanations.
-  - [api/QuestionRepository.php](file:///Users/mark/github/drluchini/training/api/QuestionRepository.php): Encapsulated JSON database file reading, querying, and slicing logic.
-  - [api/UserProgressRepository.php](file:///Users/mark/github/drluchini/training/api/UserProgressRepository.php): Tracks and persists the active question index index for each user.
-  - [api/question.php](file:///Users/mark/github/drluchini/training/api/question.php): Evaluates progress and serves structured `history`, `current`, and `prefetch` window collections.
+  - [src/types.ts](file:///Users/mark/github/train/src/types.ts): Configured type safety interfaces for questions, selections, and sliding-window formats.
+  - [onetimeload.sql](file:///Users/mark/github/train/onetimeload.sql): Populated a database of 7 detailed technical questions with multiple difficulties and detailed explanations.
+  - [api/QuestionRepository.php](file:///Users/mark/github/train/public/api/QuestionRepository.php): Encapsulated MySQL database querying, inserting, and slicing logic.
+  - [api/UserProgressRepository.php](file:///Users/mark/github/train/public/api/UserProgressRepository.php): Tracks and persists the active question index for each user in MySQL.
+  - [api/question.php](file:///Users/mark/github/train/public/api/question.php): Evaluates progress and serves structured `history`, `current`, and `prefetch` window collections.
 - **Status:** **Verified**. Frontend strict types compile cleanly and API endpoints handle cross-origin preflights natively.
 
 ### 3. Player UI - The Field
 - **Files Created/Modified:**
-  - [src/components/Field.tsx](file:///Users/mark/github/drluchini/training/src/components/Field.tsx): Designed physical stacked-deck visuals representing buffered prefetch contents.
-  - [src/App.tsx](file:///Users/mark/github/drluchini/training/src/App.tsx): Wired the game container, linking active scores, streak badges, and accessibility setting states.
+  - [src/components/Field.tsx](file:///Users/mark/github/train/src/components/Field.tsx): Designed physical stacked-deck visuals representing buffered prefetch contents.
+  - [src/App.tsx](file:///Users/mark/github/train/src/App.tsx): Wired the game container, linking active scores, streak badges, and accessibility setting states.
 - **Status:** **Verified**. The layout fills the device screen fully (`100vh`/`100vw`) and cards flip cleanly via 3D transforms.
 
 ### 4. Interaction Engine
 - **Files Created/Modified:**
-  - [src/components/Field.tsx](file:///Users/mark/github/drluchini/training/src/components/Field.tsx): Managed relative hooks for timers and click listeners.
+  - [src/components/Field.tsx](file:///Users/mark/github/train/src/components/Field.tsx): Managed relative hooks for timers and click listeners.
 - **Status:** **Verified**. The 5s auto-flip reading timer, 2s grace correction period, double-click bypass, and touch long-press triggers execute as specified.
 
 ### 5. Analytics & Logging
 - **Files Created/Modified:**
-  - [api/submit.php](file:///Users/mark/github/drluchini/training/api/submit.php): Decodes telemetry payloads and saves session details to `data_telemetry.json`.
-  - [src/components/Field.tsx](file:///Users/mark/github/drluchini/training/src/components/Field.tsx): Wires the options to the submit POST route and displays explanation cards.
+  - [api/submit.php](file:///Users/mark/github/train/public/api/submit.php): Decodes telemetry payloads and saves session details to the MySQL `telemetry_logs` table.
+  - [src/components/Field.tsx](file:///Users/mark/github/train/src/components/Field.tsx): Wires the options to the submit POST route and displays explanation cards.
 - **Status:** **Verified**. XP scores and streak counters increase correctly, and wrong answers reset status with appropriate corrections.
 
 ### 6. Admin Portal
 - **Files Created/Modified:**
-  - [admin/index.php](file:///Users/mark/github/drluchini/training/admin/index.php): Self-contained dashboard rendering question inventories, CRUD controls, JSON/CSV imports/exports, and reporting tables.
+  - [admin/index.php](file:///Users/mark/github/train/public/admin/index.php): Self-contained dashboard rendering question inventories, CRUD controls, JSON/CSV imports/exports, and reporting tables from MySQL database.
 - **Status:** **Verified**. Admin functions perform correct question mutations and compute telemetry accuracy metrics.

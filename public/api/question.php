@@ -11,6 +11,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
     exit;
 }
 
+require_once __DIR__ . '/db.php';
 require_once __DIR__ . '/QuestionRepository.php';
 require_once __DIR__ . '/UserProgressRepository.php';
 
@@ -28,8 +29,9 @@ if (empty($userId)) {
 }
 
 try {
-    $questionRepo = new QuestionRepository(__DIR__ . '/../../data_questions.json');
-    $progressRepo = new UserProgressRepository(__DIR__ . '/../../data_user_progress.json');
+    $db = getDbConnection();
+    $questionRepo = new QuestionRepository($db);
+    $progressRepo = new UserProgressRepository($db);
 
     $allQuestions = $questionRepo->getAll();
     $totalQuestions = count($allQuestions);

@@ -11,8 +11,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
     exit;
 }
 
+require_once __DIR__ . '/db.php';
 require_once __DIR__ . '/QuestionRepository.php';
 require_once __DIR__ . '/UserProgressRepository.php';
+require_once __DIR__ . '/TelemetryRepository.php';
 
 // Retrieve POST body
 $input = file_get_contents("php://input");
@@ -50,8 +52,10 @@ if (empty($userId) || $questionId <= 0 || $selectedOptionIndex < 0) {
 }
 
     try {
-        $questionRepo = new QuestionRepository(__DIR__ . '/../../data_questions.json');
-        $progressRepo = new UserProgressRepository(__DIR__ . '/../../data_user_progress.json');
+        $db = getDbConnection();
+        $questionRepo = new QuestionRepository($db);
+        $progressRepo = new UserProgressRepository($db);
+        $telemetryRepo = new TelemetryRepository($db);
     
         // Find the question to verify correctness
         $question = $questionRepo->getById($questionId);
@@ -83,37 +87,25 @@ if (empty($userId) || $questionId <= 0 || $selectedOptionIndex < 0) {
         $scoreAwarded = (int)$selectedOption['score'];
         $explanation = $selectedOption['explanation'];
     
-        // 1. Log Telemetry to data_telemetry.json
-        $telemetryFile = __DIR__ . '/../../data_telemetry.json';
-    $telemetryList = [];
-    if (file_exists($telemetryFile)) {
-        $existingData = file_get_contents($telemetryFile);
-        $telemetryList = json_decode($existingData, true);
-        if (!is_array($telemetryList)) {
-            $telemetryList = [];
-        }
-    }
-
-    $newTelemetryEntry = [
-        "telemetryId" => "tel_" . bin2hex(random_bytes(8)),
-        "userId" => $userId,
-        "questionId" => $questionId,
-        "selectedOptionIndex" => $selectedOptionIndex,
-        "correct" => $correct,
-        "score" => $scoreAwarded,
-        "readingTime" => $readingTime,
-        "decideTime" => $decideTime,
-        "selectionHistory" => $selectionHistory,
-        "deviceMetadata" => $deviceMetadata,
-        "timestamps" => $timestamps,
-        "submittedAt" => date('Y-m-d H:i:s')
-    ];
-    $telemetryList[] = $newTelemetryEntry;
-    file_put_contents($telemetryFile, json_encode($telemetryList, JSON_PRETTY_PRINT));
-
-    // 2. Increment User Progress Index
-    $currentProgressIndex = $progressRepo->getProgress($userId);
-    $progressRepo->saveProgress($userId, $currentProgressIndex + 1);
+        // 1. Log Telemetry to MySQL
+        $newTelemetryEntry = [
+            "telemetryId" => "tel_" . bin2hex(random_bytes(8)),
+            "userId" => $userId,
+            "questionId" => $questionId,
+            "selectedOptionIndex" => $selectedOptionIndex,
+            "correct" => $correct,
+            "score" => $scoreAwarded,
+            "readingTime" => $readingTime,
+            "decideTime" => $decideTime,
+            "selectionHistory" => $selectionHistory,
+            "deviceMetadata" => $deviceMetadata,
+            "timestamps" => $timestamps
+        ];
+        $telemetryRepo->log($newTelemetryEntry);
+    
+        // 2. Increment User Progress Index
+        $currentProgressIndex = $progressRepo->getProgress($userId);
+        $progressRepo->saveProgress($userId, $currentProgressIndex + 1);
 
     echo json_encode([
         "status" => "success",

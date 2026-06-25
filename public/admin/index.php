@@ -2,23 +2,21 @@
 // Admin Portal index file - self-contained PHP CRUD, Bulk Tools, and Analytics
 session_start();
 
-$questionsFile = __DIR__ . '/../../data_questions.json';
-$telemetryFile = __DIR__ . '/../../data_telemetry.json';
+require_once __DIR__ . '/../api/db.php';
+require_once __DIR__ . '/../api/QuestionRepository.php';
+require_once __DIR__ . '/../api/TelemetryRepository.php';
 
-// Helper to load questions
-function getQuestions(string $file): array {
-    if (!file_exists($file)) return [];
-    return json_decode(file_get_contents($file), true) ?? [];
+try {
+    $db = getDbConnection();
+    $questionRepo = new QuestionRepository($db);
+    $telemetryRepo = new TelemetryRepository($db);
+} catch (Exception $e) {
+    echo "<h1>Database Connection Error</h1><p>" . htmlspecialchars($e->getMessage()) . "</p>";
+    exit;
 }
 
-// Helper to load telemetry
-function getTelemetry(string $file): array {
-    if (!file_exists($file)) return [];
-    return json_decode(file_get_contents($file), true) ?? [];
-}
-
-$questions = getQuestions($questionsFile);
-$telemetry = getTelemetry($telemetryFile);
+$questions = $questionRepo->getAll();
+$telemetry = $telemetryRepo->getAll();
 
 $message = '';
 $error = '';
@@ -47,20 +45,19 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         if (empty($prompt) || empty($options)) {
             $error = "Prompt text and at least one answer option are required.";
         } else {
-            $maxId = 0;
-            foreach ($questions as $q) {
-                if ((int)$q['id'] > $maxId) $maxId = (int)$q['id'];
-            }
             $newQuestion = [
-                "id" => $maxId + 1,
                 "prompt" => $prompt,
                 "difficulty" => $difficulty,
                 "mediaPath" => $mediaPath,
                 "options" => $options
             ];
-            $questions[] = $newQuestion;
-            file_put_contents($questionsFile, json_encode($questions, JSON_PRETTY_PRINT));
-            $message = "Question created successfully!";
+            try {
+                $questionRepo->create($newQuestion);
+                $questions = $questionRepo->getAll(); // Reload questions
+                $message = "Question created successfully!";
+            } catch (Exception $e) {
+                $error = "Failed to create question: " . $e->getMessage();
+            }
         }
     }
 
@@ -85,20 +82,19 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         if ($id <= 0 || empty($prompt) || empty($options)) {
             $error = "Invalid question ID, empty prompt, or empty options.";
         } else {
-            foreach ($questions as $k => $q) {
-                if ((int)$q['id'] === $id) {
-                    $questions[$k] = [
-                        "id" => $id,
-                        "prompt" => $prompt,
-                        "difficulty" => $difficulty,
-                        "mediaPath" => $mediaPath,
-                        "options" => $options
-                    ];
-                    break;
-                }
+            $updatedQuestion = [
+                "prompt" => $prompt,
+                "difficulty" => $difficulty,
+                "mediaPath" => $mediaPath,
+                "options" => $options
+            ];
+            try {
+                $questionRepo->update($id, $updatedQuestion);
+                $questions = $questionRepo->getAll(); // Reload questions
+                $message = "Question updated successfully!";
+            } catch (Exception $e) {
+                $error = "Failed to update question: " . $e->getMessage();
             }
-            file_put_contents($questionsFile, json_encode($questions, JSON_PRETTY_PRINT));
-            $message = "Question updated successfully!";
         }
     }
 
@@ -107,9 +103,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $jsonContent = file_get_contents($_FILES['json_file']['tmp_name']);
             $newQuestions = json_decode($jsonContent, true);
             if (is_array($newQuestions)) {
-                file_put_contents($questionsFile, json_encode($newQuestions, JSON_PRETTY_PRINT));
-                $questions = $newQuestions;
-                $message = "Database successfully overwritten with JSON questions!";
+                try {
+                    $questionRepo->importAll($newQuestions);
+                    $questions = $questionRepo->getAll(); // Reload questions
+                    $message = "Database successfully overwritten with JSON questions!";
+                } catch (Exception $e) {
+                    $error = "Failed to import questions: " . $e->getMessage();
+                }
             } else {
                 $error = "Invalid JSON file format.";
             }
@@ -124,42 +124,43 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             if (($handle = fopen($file, "r")) !== FALSE) {
                 // Header line
                 $headers = fgetcsv($handle, 1000, ",");
-                $imported = [];
-                $maxId = 0;
-                foreach ($questions as $q) {
-                    if ((int)$q['id'] > $maxId) $maxId = (int)$q['id'];
-                }
+                $importedCount = 0;
 
-                while (($row = fgetcsv($handle, 1000, ",")) !== FALSE) {
-                    if (count($row) < 3 || empty($row[1])) continue;
-                    $maxId++;
-                    $options = [];
-                    // Option 1
-                    if (!empty($row[4])) {
-                        $options[] = ["text" => $row[4], "score" => (int)($row[5] ?? 0), "explanation" => $row[6] ?? ''];
-                    }
-                    // Option 2
-                    if (!empty($row[7])) {
-                        $options[] = ["text" => $row[7], "score" => (int)($row[8] ?? 0), "explanation" => $row[9] ?? ''];
-                    }
-                    // Option 3
-                    if (!empty($row[10])) {
-                        $options[] = ["text" => $row[10], "score" => (int)($row[11] ?? 0), "explanation" => $row[12] ?? ''];
-                    }
+                $db->beginTransaction();
+                try {
+                    while (($row = fgetcsv($handle, 1000, ",")) !== FALSE) {
+                        if (count($row) < 3 || empty($row[1])) continue;
+                        $options = [];
+                        // Option 1
+                        if (!empty($row[4])) {
+                            $options[] = ["text" => $row[4], "score" => (int)($row[5] ?? 0), "explanation" => $row[6] ?? ''];
+                        }
+                        // Option 2
+                        if (!empty($row[7])) {
+                            $options[] = ["text" => $row[7], "score" => (int)($row[8] ?? 0), "explanation" => $row[9] ?? ''];
+                        }
+                        // Option 3
+                        if (!empty($row[10])) {
+                            $options[] = ["text" => $row[10], "score" => (int)($row[11] ?? 0), "explanation" => $row[12] ?? ''];
+                        }
 
-                    $imported[] = [
-                        "id" => $maxId,
-                        "prompt" => $row[1],
-                        "difficulty" => in_array($row[2], ['Beginner', 'Intermediate', 'Complex']) ? $row[2] : 'Beginner',
-                        "mediaPath" => $row[3] ?? '',
-                        "options" => $options
-                    ];
+                        $newQ = [
+                            "prompt" => $row[1],
+                            "difficulty" => in_array($row[2], ['Beginner', 'Intermediate', 'Complex']) ? $row[2] : 'Beginner',
+                            "mediaPath" => $row[3] ?? '',
+                            "options" => $options
+                        ];
+                        $questionRepo->create($newQ);
+                        $importedCount++;
+                    }
+                    $db->commit();
+                    $questions = $questionRepo->getAll(); // Reload questions
+                    $message = "Imported " . $importedCount . " questions from CSV!";
+                } catch (Exception $e) {
+                    $db->rollBack();
+                    $error = "Failed to import CSV: " . $e->getMessage();
                 }
                 fclose($handle);
-
-                $questions = array_merge($questions, $imported);
-                file_put_contents($questionsFile, json_encode($questions, JSON_PRETTY_PRINT));
-                $message = "Imported " . count($imported) . " questions from CSV!";
             } else {
                 $error = "Failed to open CSV file.";
             }
@@ -173,11 +174,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET' || $_SERVER['REQUEST_METHOD'] === 'POST
     if ($action === 'delete') {
         $id = (int)($_GET['id'] ?? 0);
         if ($id > 0) {
-            $questions = array_filter($questions, fn($q) => (int)$q['id'] !== $id);
-            // Re-index array keys
-            $questions = array_values($questions);
-            file_put_contents($questionsFile, json_encode($questions, JSON_PRETTY_PRINT));
-            $message = "Question deleted successfully!";
+            try {
+                $questionRepo->delete($id);
+                $questions = $questionRepo->getAll(); // Reload questions
+                $message = "Question deleted successfully!";
+            } catch (Exception $e) {
+                $error = "Failed to delete question: " . $e->getMessage();
+            }
         }
     }
 
