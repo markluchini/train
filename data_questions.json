@@ -1,0 +1,163 @@
+[
+  {
+    "id": 1,
+    "prompt": "Which CSS property combination is essential to construct a fully non-scrolling mobile layout container when viewport dimensions are fixed?",
+    "mediaPath": "",
+    "difficulty": "Beginner",
+    "options": [
+      {
+        "text": "h-screen w-screen overflow-hidden",
+        "score": 100,
+        "explanation": "Using 100vh/100vw (or h-screen/w-screen) with overflow-hidden ensures the container is sized exactly to the viewport and prevents touch drag scrolling."
+      },
+      {
+        "text": "position: absolute; width: 100%; height: 100%;",
+        "score": 0,
+        "explanation": "Absolute positioning removes elements from document flow but doesn't prevent outer viewport scrolling if content overflows."
+      },
+      {
+        "text": "display: flex; flex-direction: column; overflow: scroll;",
+        "score": 0,
+        "explanation": "Using overflow: scroll explicitly enables scrollbars, which runs counter to building a non-scrolling layout."
+      }
+    ]
+  },
+  {
+    "id": 2,
+    "prompt": "What is the primary architectural purpose of using the Repository Pattern in a service-oriented application?",
+    "mediaPath": "",
+    "difficulty": "Intermediate",
+    "options": [
+      {
+        "text": "To decouple domain/business logic from data access and storage implementation details.",
+        "score": 100,
+        "explanation": "Repository pattern abstracts data access behind an interface, allowing storage layers (like JSON files, MySQL, or NoSQL) to change without affecting domain logic."
+      },
+      {
+        "text": "To automatically translate JavaScript runtime object schemas into relational SQL tables.",
+        "score": 0,
+        "explanation": "Translating objects to relational structures is the responsibility of an Object-Relational Mapper (ORM), not the Repository pattern itself."
+      },
+      {
+        "text": "To implement low-latency caching and query pooling directly in the database connection layer.",
+        "score": 0,
+        "explanation": "While repositories can integrate caching, their primary purpose is abstraction and decoupling rather than network or connection optimization."
+      }
+    ]
+  },
+  {
+    "id": 3,
+    "prompt": "In React 19, what happens when you trigger a state update with the exact same value as the current state during a render cycle?",
+    "mediaPath": "",
+    "difficulty": "Complex",
+    "options": [
+      {
+        "text": "React uses Object.is comparison and bails out without re-rendering components or firing effects.",
+        "score": 100,
+        "explanation": "React compares state values using the Object.is algorithm. If values are identical, it skips re-rendering child components and triggering associated hooks to optimize performance."
+      },
+      {
+        "text": "React performs a deep-equal comparison of properties and re-renders only modified fields.",
+        "score": 0,
+        "explanation": "React state updates utilize shallow comparison (Object.is) and do not inspect nested object properties unless customized."
+      },
+      {
+        "text": "React throws a warning in StrictMode because state mutations must always produce a new reference.",
+        "score": 0,
+        "explanation": "Updating state with the same value is not considered an error or mutation; it is a valid optimization path (bailout) supported by React."
+      }
+    ]
+  },
+  {
+    "id": 4,
+    "prompt": "How does Tailwind CSS v4 change the build integration compared to Tailwind CSS v3?",
+    "mediaPath": "",
+    "difficulty": "Intermediate",
+    "options": [
+      {
+        "text": "It uses a native Vite compiler plugin (@tailwindcss/vite) that eliminates the need for separate postcss.config.js and tailwind.config.js configurations.",
+        "score": 100,
+        "explanation": "Tailwind v4 is built on a rust-powered engine with native Vite support, meaning config is set up directly via CSS directives (`@import 'tailwindcss'`) and the Vite plugin."
+      },
+      {
+        "text": "It requires Node JS v22+ and can only be bundled using the Rolldown compiler in production mode.",
+        "score": 0,
+        "explanation": "While it requires newer Node engines, it does not mandate Rolldown; it runs under standard Vite, Webpack, or as a standalone CLI."
+      },
+      {
+        "text": "It deprecates client-side build tools and shifts compile engines entirely into Edge workers.",
+        "score": 0,
+        "explanation": "Tailwind compiles locally at build time just like previous versions to keep bundles lightweight."
+      }
+    ]
+  },
+  {
+    "id": 5,
+    "prompt": "Which PHP mechanism should be used to protect database operations from SQL Injection when executing queries with user-supplied parameters?",
+    "mediaPath": "",
+    "difficulty": "Beginner",
+    "options": [
+      {
+        "text": "PDO Prepared Statements with bound parameters (bindParam / execute).",
+        "score": 100,
+        "explanation": "Prepared statements send sql structure and parameters separately to the database engine, rendering injection attacks ineffective."
+      },
+      {
+        "text": "Applying htmlspecialchars() to escape quotes and operators before database ingestion.",
+        "score": 0,
+        "explanation": "htmlspecialchars escaping is meant for XSS mitigation in HTML output, not database injection protection, and can lead to corrupt query syntax."
+      },
+      {
+        "text": "Using base64_encode to transform all string fields before running queries.",
+        "score": 0,
+        "explanation": "Encoding input obscurs data but doesn't solve database parser injection flaws, and ruins indexing/query filters unless base64 decoded inside the DB."
+      }
+    ]
+  },
+  {
+    "id": 6,
+    "prompt": "In a RESTful architecture, which HTTP method is appropriate for applying partial modifications to a resource?",
+    "mediaPath": "",
+    "difficulty": "Beginner",
+    "options": [
+      {
+        "text": "PATCH",
+        "score": 100,
+        "explanation": "PATCH is explicitly designed for partial updates of an existing resource, whereas PUT is for replacing the entire resource."
+      },
+      {
+        "text": "PUT",
+        "score": 0,
+        "explanation": "PUT is used for full resource replacements (or creations). While sometimes used for partial updates, it is technically non-standard for partial modifications."
+      },
+      {
+        "text": "POST",
+        "score": 0,
+        "explanation": "POST is typically used for creating new resources rather than modifying existing ones."
+      }
+    ]
+  },
+  {
+    "id": 7,
+    "prompt": "What does the TypeScript 'unknown' type represent, and how does it differ from the 'any' type?",
+    "mediaPath": "",
+    "difficulty": "Complex",
+    "options": [
+      {
+        "text": "It represents any value, but unlike 'any', it is type-safe; you cannot perform operations on it without first narrowing the type via type guards or assertions.",
+        "score": 100,
+        "explanation": "'unknown' is the type-safe counterpart of 'any'. You can assign anything to it, but you must check its type (e.g. using typeof, instanceof) before accessing properties or executing it."
+      },
+      {
+        "text": "It represents values that cannot exist at runtime, such as the return type of functions that throw errors.",
+        "score": 0,
+        "explanation": "This describes the 'never' type, not the 'unknown' type."
+      },
+      {
+        "text": "It is a deprecated type alias that was replaced by structural interfaces in modern TypeScript versions.",
+        "score": 0,
+        "explanation": "'unknown' was introduced in TypeScript 3.0 and remains a fundamental element of modern type safety."
+      }
+    ]
+  }
+]
