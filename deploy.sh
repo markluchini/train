@@ -69,8 +69,8 @@ echo "Installing npm dependencies..."
 npm install
 
 # 3. Build production bundle (outputs to 'dist/')
-echo "Compiling Vite production bundle (outputs to dist/)..."
-npm run build
+# Run build tools directly via node to avoid npm privilege-dropping issues when run as root
+node node_modules/typescript/bin/tsc -b && node node_modules/vite/bin/vite.js build
 
 # Copy public/ contents to dist/ to make them available on the production deployment
 echo "Copying public/ contents to dist/..."
