@@ -1,12 +1,8 @@
 <?php
-ini_set('display_errors', 1);
-ini_set('display_startup_errors', 1);
-error_reporting(E_ALL);
-
 // Database connection helper using PDO
 
 $config_file = '/var/www/.train.drluchini.com.php';
-if (file_exists($config_file)) {
+if (is_readable($config_file)) {
     require_once $config_file;
 }
 
