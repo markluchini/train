@@ -72,6 +72,10 @@ npm install
 echo "Compiling Vite production bundle (outputs to dist/)..."
 npm run build
 
+# Copy public/ contents to dist/ to make them available on the production deployment
+echo "Copying public/ contents to dist/..."
+cp -r public/* dist/
+
 # 4. Set database and telemetry file permissions
 echo "Setting database and telemetry file permissions..."
 # Ensure files exist in the root (outside of dist/)
